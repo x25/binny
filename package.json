@@ -1,0 +1,23 @@
+{
+  "name": "binny",
+  "version": "0.1.1",
+  "description": "Packs arrays to blobs",
+  "main": "index.js",
+  "scripts": {
+    "test": "node tests/basic.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/x25/binny.git"
+  },
+  "keywords": [
+    "binary",
+    "packing"
+  ],
+  "author": "x25",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/x25/binny/issues"
+  },
+  "homepage": "https://github.com/x25/binny"
+}
