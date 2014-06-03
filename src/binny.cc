@@ -1,33 +1,33 @@
-#define BUILDING_NODE_EXTENSION
-
 #include <node.h>
-#include <node_buffer.h>
-#include <string.h>
+#include <nan.h>
 
-using namespace v8;
+using v8::FunctionTemplate;
+using v8::Handle;
+using v8::Local;
+using v8::Object;
+using v8::String;
+using v8::Array;
 
-Handle<Value> Unpack(const Arguments& args) {
-  HandleScope scope;
+NAN_METHOD(Unpack) {
+  NanScope();
 
   if (args.Length() < 1 || !node::Buffer::HasInstance(args[0])) {
-    ThrowException(Exception::TypeError(String::New("First argument needs to be a buffer")));
-    return scope.Close(Undefined());
+    return NanThrowError("First argument needs to be a buffer");
   }
 
   Local<Object> bufferObj = args[0]->ToObject();
   size_t inputLength = node::Buffer::Length(bufferObj);
 
-  Local<Array> result = Array::New();
+  Local<Array> result = NanNew<Array>();
 
   if (!inputLength) {
-    return scope.Close(result);
+    NanReturnValue(result);
   }
 
   char *inputData = node::Buffer::Data(bufferObj);
 
   if ((unsigned char)inputData[0] != 0xB1 || inputLength < 3) {
-    ThrowException(Exception::TypeError(String::New("Bad header")));
-    return scope.Close(Undefined());
+    return NanThrowError("Bad header");
   }
 
   uint16_t numBlocks = ntohs(*((uint16_t *)(inputData + 1)));
@@ -38,24 +38,22 @@ Handle<Value> Unpack(const Arguments& args) {
     uint16_t blockLen = ntohs(*((uint16_t *)(inputData + offset)));
 
     if (offset + 2 + blockLen > inputLength) {
-      ThrowException(Exception::TypeError(String::New("Bad data")));
-      return scope.Close(Undefined());
+      return NanThrowError("Bad data");
     }
 
-    result->Set(i, String::New(inputData + offset + 2, blockLen));
+    result->Set(i, NanNew<String>(inputData + offset + 2, blockLen));
 
     offset += 2 + blockLen;
   }
 
-  return scope.Close(result);
+  NanReturnValue(result);
 }
 
-Handle<Value> Pack(const Arguments& args) {
-  HandleScope scope;
+NAN_METHOD(Pack) {
+  NanScope();
 
   if (args.Length() < 1 || !args[0]->IsArray()) {
-    ThrowException(Exception::TypeError(String::New("First argument needs to be a array")));
-    return scope.Close(Undefined());
+    return NanThrowError("First argument needs to be a array");
   }
 
   size_t outputLen = 3;
@@ -63,8 +61,7 @@ Handle<Value> Pack(const Arguments& args) {
   Handle<Array> input = Handle<Array>::Cast(args[0]);
   for (unsigned int i = 0; i < input->Length(); i++) {
     if (!input->Get(i)->IsString()) {
-      ThrowException(Exception::TypeError(String::New("Array must contain only strings")));
-      return scope.Close(Undefined());
+      return NanThrowError("Array must contain only strings");
     }
 
     Local<String> str = input->Get(i)->ToString();
@@ -72,8 +69,8 @@ Handle<Value> Pack(const Arguments& args) {
     outputLen += 2 + str->Length();
   }
 
-  node::Buffer *slowBuffer = node::Buffer::New(outputLen);
-  char *outputData = node::Buffer::Data(slowBuffer);
+  Local<Object> result = NanNewBufferHandle(outputLen);
+  char *outputData = node::Buffer::Data(result);
 
   outputData[0] = 0xB1;
 
@@ -83,39 +80,28 @@ Handle<Value> Pack(const Arguments& args) {
 
   for (unsigned int i = 0; i < input->Length(); i++) {
     Local<String> str = input->Get(i)->ToString();
-    String::AsciiValue val(str);
+
+    size_t count;
+    char* val = NanCString(str, &count);
 
     *((uint16_t *)(outputData + offset)) = htons(str->Length());
     offset += 2;
-    memcpy(outputData + offset, *val, str->Length());
+    memcpy(outputData + offset, val, str->Length());
     offset += str->Length();
   }
 
-  Local<Object> global = Context::GetCurrent()->Global();
-  Local<Value> bv = global->Get(String::NewSymbol("Buffer"));
-
-  assert(bv->IsFunction());
-
-  Local<Function> bc = Local<Function>::Cast(bv);
-  Handle<Value> cArgs[3] = {
-    slowBuffer->handle_,
-    Integer::New(outputLen),
-    Integer::New(0)
-  };
-
-  Local<Object> fastBuffer = bc->NewInstance(3, cArgs);
-  return scope.Close(fastBuffer);
+  NanReturnValue(result);
 }
 
 void Init(Handle<Object> exports) {
   exports->Set(
-    String::NewSymbol("pack"),
-    FunctionTemplate::New(Pack)->GetFunction()
+    NanNew<String>("pack"),
+    NanNew<FunctionTemplate>(Pack)->GetFunction()
   );
 
   exports->Set(
-    String::NewSymbol("unpack"),
-    FunctionTemplate::New(Unpack)->GetFunction()
+    NanNew<String>("unpack"),
+    NanNew<FunctionTemplate>(Unpack)->GetFunction()
   );
 }
 
