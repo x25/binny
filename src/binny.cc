@@ -108,7 +108,7 @@ NAN_METHOD(Pack) {
   };
 
   Local<Object> fastBuffer = bc->NewInstance(3, cArgs);
-  return NanReturnValue(fastBuffer);
+  NanReturnValue(fastBuffer);
 #endif
 
 }
