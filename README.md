@@ -1,7 +1,7 @@
 Binny [![](https://travis-ci.org/x25/binny.png)](https://travis-ci.org/x25/binny)
 =====
 
-Binny is an addon for NodeJS that serializes arrays to blobs. Why? Because he do it up to 10 times faster than built-in ``JSON`` for certain cases.
+Binny is an addon for NodeJS that serializes arrays to blobs. Why? Because he do it up to 10 times faster than built-in JSON for certain cases.
 
 ```bash
 $ npm install binny
@@ -16,7 +16,7 @@ Binny.pack(['a', 'bb', 'ccc'])
 will return:
 
 ```
-<Buffer: B1 00 03 00 01 61 00 02 62 62 00 03 63 63 63>
+<SlowBuffer: B1 00 03 00 01 61 00 02 62 62 00 03 63 63 63>
 
 B1 - Version (binny1)
 00 03 - Number of blocks
@@ -41,11 +41,26 @@ var buffer = Binny.pack(['array', 'of', 'strings']);
 var arr = Binny.unpack(buffer);
 ```
 
+## Perfomance
+
+```sh
+$ npm run perfomance
+```
+
+Binny is slower than JSON for small arrays, but he rocks for complex structures:
+
+```
+Binny.pack: 6228 ms
+JSON.Stringify: 10393 ms
+Binny.unpack: 2587 ms
+JSON.parse: 17019 ms
+```
+
 ## Tests
 
 ```sh
 $ npm test
 ```
 
-## Licence
+## License
 MIT

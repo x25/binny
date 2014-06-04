@@ -65,11 +65,7 @@ NAN_METHOD(Pack) {
     delete val;
   }
 
-#if NODE_MODULE_VERSION > 0x000B
-  Local<Object> result = NanNewBufferHandle(outputLen);
-#else
-  node::Buffer *result = node::Buffer::New(outputLen); //slowBuffer!
-#endif
+  Local<Object> result = NanNewBufferHandle(outputLen); //slowBuffer!
 
   char *outputData = node::Buffer::Data(result);
 
@@ -91,26 +87,7 @@ NAN_METHOD(Pack) {
     delete val;
   }
 
-#if NODE_MODULE_VERSION > 0x000B
   NanReturnValue(result);
-#else
-  Local<Object> global = NanGetCurrentContext()->Global();
-  Local<Value> bv = global->Get(NanNew<String>("Buffer"));
-
-  assert(bv->IsFunction());
-
-  Local<Function> bc = Local<Function>::Cast(bv);
-
-  Handle<Value> cArgs[3] = {
-    result->handle_,
-    NanNew<Integer>(outputLen),
-    NanNew<Integer>(0)
-  };
-
-  Local<Object> fastBuffer = bc->NewInstance(3, cArgs);
-  NanReturnValue(fastBuffer);
-#endif
-
 }
 
 void Init(Handle<Object> exports) {
