@@ -1,5 +1,6 @@
 #include <node.h>
 #include <nan.h>
+#include <vector>
 
 using namespace v8;
 
@@ -54,15 +55,23 @@ NAN_METHOD(Pack) {
   size_t outputLen = sizeof(char) + sizeof(uint16_t);
 
   Handle<Array> input = Handle<Array>::Cast(args[0]);
+
+  std::vector<size_t> arrLen(input->Length(), 0);
+  std::vector<char*> arrStr(input->Length(), 0);
+
   for (unsigned int i = 0; i < input->Length(); i++) {
     if (!input->Get(i)->IsString()) {
+      if (i > 0) {
+        for (unsigned int j = i; j > 0; j--) {
+          delete arrStr[i];
+        }
+      }
+
       return NanThrowError("Array must contain only strings");
     }
 
-    size_t len;
-    char* val = NanCString(input->Get(i), &len);
-    outputLen += sizeof(uint16_t) + len;
-    delete val;
+    arrStr[i] = NanCString(input->Get(i), &arrLen[i]);
+    outputLen += sizeof(uint16_t) + arrLen[i];
   }
 
   Local<Object> result = NanNewBufferHandle(outputLen); //slowBuffer!
@@ -76,15 +85,12 @@ NAN_METHOD(Pack) {
   unsigned int offset = sizeof(char) + sizeof(uint16_t);
 
   for (unsigned int i = 0; i < input->Length(); i++) {
-    size_t len;
-    char* val = NanCString(input->Get(i), &len);
+    *((uint16_t *)(outputData + offset)) = htons(arrLen[i]);
 
-    *((uint16_t *)(outputData + offset)) = htons(len);
+    memcpy(outputData + offset + sizeof(uint16_t), arrStr[i], arrLen[i]);
+    offset += sizeof(uint16_t) + arrLen[i];
 
-    memcpy(outputData + offset + sizeof(uint16_t), val, len);
-    offset += sizeof(uint16_t) + len;
-
-    delete val;
+    delete arrStr[i];
   }
 
   NanReturnValue(result);

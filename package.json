@@ -1,6 +1,6 @@
 {
   "name": "binny",
-  "version": "0.2.4",
+  "version": "1.0.1",
   "description": "Packs arrays to blobs",
   "main": "index.js",
   "scripts": {
