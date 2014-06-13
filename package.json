@@ -1,11 +1,11 @@
 {
   "name": "binny",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Packs arrays to blobs",
   "main": "index.js",
   "scripts": {
     "test": "node tests/binny.js",
-    "perfomance": "node tests/perfomance.js"
+    "benchmark": "node tests/perfomance.js"
   },
   "repository": {
     "type": "git",
@@ -13,6 +13,7 @@
   },
   "keywords": [
     "binary",
+    "array",
     "packing"
   ],
   "dependencies": {
