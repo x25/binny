@@ -4,10 +4,11 @@
 
 using namespace v8;
 
-#define BINNY_BLOB_V1 0xB1
-#define BINNY_NUM_SIZE sizeof(uint16_t)
-#define BINNY_HEADER_SIZE sizeof(char) + BINNY_NUM_SIZE
-#define BINNY_BLOCK_MAX_LEN sizeof(uint16_t)
+#define BINNY_V1 0xB1
+#define BINNY_V1_NUM_SIZE sizeof(uint16_t)
+#define BINNY_V1_HEADER_SIZE sizeof(char) + BINNY_V1_NUM_SIZE
+#define BINNY_V1_MAX_BLOCKS (uint16_t)-1
+#define BINNY_V1_BLOCK_MAX_LEN (uint16_t)-1
 
 NAN_METHOD(Unpack) {
   NanScope();
@@ -19,13 +20,13 @@ NAN_METHOD(Unpack) {
   Handle<Object> inputObj = Handle<Object>::Cast(args[0]);
   size_t inputLength = node::Buffer::Length(inputObj);
 
-  if (inputLength < BINNY_HEADER_SIZE) {
+  if (inputLength < BINNY_V1_HEADER_SIZE) {
     return NanThrowError("Invalid header size");
   }
 
   char *inputRawData = node::Buffer::Data(inputObj);
 
-  if ((unsigned char)inputRawData[0] != BINNY_BLOB_V1) {
+  if ((unsigned char)inputRawData[0] != BINNY_V1) {
     return NanThrowError("Unsupported blob version");
   }
 
@@ -33,18 +34,18 @@ NAN_METHOD(Unpack) {
 
   Local<Array> result = NanNew<Array>();
 
-  unsigned int offset = BINNY_HEADER_SIZE;
+  unsigned int offset = BINNY_V1_HEADER_SIZE;
 
   for (unsigned int i = 0; i < numBlocks; i++) {
     uint16_t blockLen = ntohs(*((uint16_t *)(inputRawData + offset)));
 
-    if (offset + BINNY_NUM_SIZE + blockLen > inputLength) {
-      return NanThrowError("Corrupted blob data");
+    if (offset + BINNY_V1_NUM_SIZE + blockLen > inputLength) {
+      return NanThrowError("Malformed blob data");
     }
 
-    result->Set(i, NanNew<String>(inputRawData + offset + BINNY_NUM_SIZE, blockLen));
+    result->Set(i, NanNew<String>(inputRawData + offset + BINNY_V1_NUM_SIZE, blockLen));
 
-    offset += BINNY_NUM_SIZE + blockLen;
+    offset += BINNY_V1_NUM_SIZE + blockLen;
   }
 
   NanReturnValue(result);
@@ -57,43 +58,56 @@ NAN_METHOD(Pack) {
     return NanThrowError("First argument needs to be a array");
   }
 
-  size_t outputLen = BINNY_HEADER_SIZE;
+  size_t outputLen = BINNY_V1_HEADER_SIZE;
 
   Handle<Array> input = Handle<Array>::Cast(args[0]);
 
-  std::vector<char*> arrStr(input->Length(), 0);
-  std::vector<size_t> arrStrLen(input->Length(), 0);
+  if (input->Length() > BINNY_V1_MAX_BLOCKS) {
+    return NanThrowError("Too many elements");
+  }
+
+  std::vector<char*> arrBlock(input->Length(), 0);
+  std::vector<size_t> arrBlockLen(input->Length(), 0);
 
   for (unsigned int i = 0; i < input->Length(); i++) {
     if (!input->Get(i)->IsString()) {
       while (i-- >= 1) {
-        delete arrStr[i]; //already decremented
+        delete arrBlock[i];
       }
 
       return NanThrowError("Array must contain only strings");
     }
 
-    arrStr[i] = NanCString(input->Get(i), &arrStrLen[i]);
-    outputLen += BINNY_NUM_SIZE + arrStrLen[i];
+    arrBlock[i] = NanCString(input->Get(i), &arrBlockLen[i]);
+
+    if (arrBlockLen[i] > BINNY_V1_BLOCK_MAX_LEN) {
+      while (i + 1 > 0) {
+        delete arrBlock[i--];
+      }
+
+      return NanThrowError("Too big string");
+    }
+
+    outputLen += BINNY_V1_NUM_SIZE + arrBlockLen[i];
   }
 
   Local<Object> result = NanNewBufferHandle(outputLen); //slowBuffer in node <=0.10!
 
   char *outputData = node::Buffer::Data(result);
 
-  outputData[0] = BINNY_BLOB_V1;
+  outputData[0] = BINNY_V1;
 
   *((uint16_t *)(outputData + 1)) = htons(input->Length());
 
-  unsigned int offset = BINNY_HEADER_SIZE;
+  unsigned int offset = BINNY_V1_HEADER_SIZE;
 
   for (unsigned int i = 0; i < input->Length(); i++) {
-    *((uint16_t *)(outputData + offset)) = htons(arrStrLen[i]);
+    *((uint16_t *)(outputData + offset)) = htons(arrBlockLen[i]);
 
-    memcpy(outputData + offset + BINNY_NUM_SIZE, arrStr[i], arrStrLen[i]);
-    offset += BINNY_NUM_SIZE + arrStrLen[i];
+    memcpy(outputData + offset + BINNY_V1_NUM_SIZE, arrBlock[i], arrBlockLen[i]);
+    offset += BINNY_V1_NUM_SIZE + arrBlockLen[i];
 
-    delete arrStr[i];
+    delete arrBlock[i];
   }
 
   NanReturnValue(result);
