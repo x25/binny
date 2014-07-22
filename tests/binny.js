@@ -53,18 +53,29 @@ function testBasic() {
 		err = true;
 	}
 
-	assert.equal(err, true);
+	assert(err);
+
+	var b; (b = new Buffer(65535 + 1)).fill("A");
 
 	err = false;
 
 	try {
-		var b; (b = new Buffer(65535 + 1)).fill("A");
 		Binny.pack([b.toString()]);
 	} catch (e) {
 		err = true;
 	}
 
-	assert.equal(err, true);
+	assert(err);
+
+	err = false;
+
+	try {
+		Binny.pack(b.toString().split("A"));
+	} catch (e) {
+		err = true;
+	}
+
+	assert(err);
 }
 
 function testPack(data) {

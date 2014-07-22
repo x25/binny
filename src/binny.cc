@@ -55,7 +55,7 @@ NAN_METHOD(Pack) {
   NanScope();
 
   if (args.Length() < 1 || !args[0]->IsArray()) {
-    return NanThrowError("First argument needs to be a array");
+    return NanThrowError("First argument needs to be an array");
   }
 
   size_t outputLen = BINNY_V1_HEADER_SIZE;
@@ -75,7 +75,7 @@ NAN_METHOD(Pack) {
         delete arrBlock[i];
       }
 
-      return NanThrowError("Array must contain only strings");
+      return NanThrowError("Input array must contain only strings");
     }
 
     arrBlock[i] = NanCString(input->Get(i), &arrBlockLen[i]);

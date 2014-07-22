@@ -1,4 +1,4 @@
-Binny [![](https://travis-ci.org/x25/binny.png)](https://travis-ci.org/x25/binny)
+Binny [![](https://travis-ci.org/x25/binny.svg?branch=master)](https://travis-ci.org/x25/binny)
 =====
 
 Binny is an C++ addon for NodeJS that serializes arrays to blobs. Why? Because he do it up to 10 times faster than built-in JSON for certain cases.
