@@ -78,7 +78,11 @@ NAN_METHOD(Pack) {
       return NanThrowError("Input array must contain only strings");
     }
 
-    arrBlock[i] = NanCString(input->Get(i), &arrBlockLen[i]);
+    v8::Local<v8::String> str = input->Get(i)->ToString();
+
+    arrBlockLen[i] = str->Utf8Length();
+    arrBlock[i] = new char[ arrBlockLen[i] ];
+    str->WriteUtf8(arrBlock[i]);
 
     if (arrBlockLen[i] > BINNY_V1_BLOCK_MAX_LEN) {
       while (i + 1 > 0) {

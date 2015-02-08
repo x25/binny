@@ -28,8 +28,8 @@ var testJsonParse = function (data) {
 	JSON.parse(data);
 };
 
-//For example we have data in the following format:
-//['actionName', 'list of uids', '5kb of json-like data']
+//For example we have an UDP packet in the following format:
+//['someAction', 'list of uids', '5kb of json-like payload']
 
 var payload = {};
 
