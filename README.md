@@ -12,7 +12,7 @@ $ npm install binny
 ## Blobs
 
 ```js
-Binny.pack(['a', 'bb', 'ccc'])
+Binny.pack(["a", "bb", "ccc"])
 ```
 
 will return:
@@ -26,13 +26,13 @@ B1 - Version
 61 - "a"
 00 02 - Length of next block
 62 62 - "bb"
-00 03 - Lenght of next block
+00 03 - Length of next block
 63 63 63 - "ccc"
 ```
 
 Numbers are stored as big-endian uint16.
 
-In current version Binny can process only arrays of strings!
+In current version Binny can process only arrays of ascii/utf8 strings!
 
 ## Perfomance
 
@@ -55,10 +55,10 @@ JSON.parse: 38383ms
 ## Usage
 
 ```js
-var Binny = require('binny');
+var Binny = require("binny");
 
-var buffer = Binny.pack(['array', 'of', 'strings']);
-var arr = Binny.unpack(buffer); //['array', 'of', 'strings']
+var buffer = Binny.pack(["array", "of", "strings"]);
+var arr = Binny.unpack(buffer); //["array", "of", "strings"]
 ```
 
 ## Tests

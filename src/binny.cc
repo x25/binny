@@ -1,6 +1,5 @@
 #include <node.h>
 #include <nan.h>
-#include <vector>
 
 using namespace v8;
 
@@ -14,6 +13,7 @@ NAN_METHOD(Unpack) {
   NanScope();
 
   if (args.Length() < 1 || !node::Buffer::HasInstance(args[0])) {
+
     return NanThrowError("First argument needs to be a buffer");
   }
 
@@ -21,12 +21,14 @@ NAN_METHOD(Unpack) {
   size_t inputLength = node::Buffer::Length(inputObj);
 
   if (inputLength < BINNY_V1_HEADER_SIZE) {
+
     return NanThrowError("Invalid header size");
   }
 
   char *inputRawData = node::Buffer::Data(inputObj);
 
   if ((unsigned char)inputRawData[0] != BINNY_V1) {
+
     return NanThrowError("Unsupported blob version");
   }
 
@@ -40,6 +42,7 @@ NAN_METHOD(Unpack) {
     uint16_t blockLen = ntohs(*((uint16_t *)(inputRawData + offset)));
 
     if (offset + BINNY_V1_NUM_SIZE + blockLen > inputLength) {
+
       return NanThrowError("Malformed blob data");
     }
 
@@ -55,6 +58,7 @@ NAN_METHOD(Pack) {
   NanScope();
 
   if (args.Length() < 1 || !args[0]->IsArray()) {
+
     return NanThrowError("First argument needs to be an array");
   }
 
@@ -63,11 +67,12 @@ NAN_METHOD(Pack) {
   Handle<Array> input = Handle<Array>::Cast(args[0]);
 
   if (input->Length() > BINNY_V1_MAX_BLOCKS) {
+
     return NanThrowError("Too many elements");
   }
 
-  std::vector<char*> arrBlock(input->Length(), 0);
-  std::vector<size_t> arrBlockLen(input->Length(), 0);
+  char* arrBlock[input->Length()];
+  int   arrBlockLen[input->Length()];
 
   for (unsigned int i = 0; i < input->Length(); i++) {
     if (!input->Get(i)->IsString()) {
@@ -81,16 +86,17 @@ NAN_METHOD(Pack) {
     v8::Local<v8::String> str = input->Get(i)->ToString();
 
     arrBlockLen[i] = str->Utf8Length();
-    arrBlock[i] = new char[ arrBlockLen[i] ];
-    str->WriteUtf8(arrBlock[i]);
 
     if (arrBlockLen[i] > BINNY_V1_BLOCK_MAX_LEN) {
-      while (i + 1 > 0) {
-        delete arrBlock[i--];
+      while (i-- >= 1) {
+        delete arrBlock[i];
       }
 
       return NanThrowError("Too big string");
     }
+
+    arrBlock[i] = new char[ arrBlockLen[i] + 1];
+    str->WriteUtf8(arrBlock[i]);
 
     outputLen += BINNY_V1_NUM_SIZE + arrBlockLen[i];
   }
@@ -106,6 +112,7 @@ NAN_METHOD(Pack) {
   unsigned int offset = BINNY_V1_HEADER_SIZE;
 
   for (unsigned int i = 0; i < input->Length(); i++) {
+
     *((uint16_t *)(outputData + offset)) = htons(arrBlockLen[i]);
 
     memcpy(outputData + offset + BINNY_V1_NUM_SIZE, arrBlock[i], arrBlockLen[i]);
